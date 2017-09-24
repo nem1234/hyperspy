@@ -777,7 +777,6 @@ class ImageObject(object):
         metadata['General']['title'] = self.title
         metadata["Signal"]['record_by'] = self.record_by
         metadata["Signal"]['signal_type'] = self.signal_type
-
         return metadata
 
     def _get_quantity(self, units):
@@ -1207,7 +1206,6 @@ class ImageObject(object):
         return mapping
 
 
-
 def file_reader(filename, record_by=None, order=None, lazy=False):
     """Reads a DM3 file and loads the data into the appropriate class.
     data_id can be specified to load a given image within a DM3 file that
@@ -1266,7 +1264,6 @@ def file_reader(filename, record_by=None, order=None, lazy=False):
                                     dtype=image.dtype)
             else:
                 data = image.get_data()
-
             imd.append(
                 {'data': data,
                  'axes': axes,
