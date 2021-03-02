@@ -4872,7 +4872,8 @@ class BaseSignal(FancySlicing,
                 for ind, res in zip(
                     range(res_data.size), executor.map(func, zip(*iterators))
                 ):
-                    res = np.asarray(res)
+                    if not hasattr(res, '__array__'):
+                        res = np.asarray(res)
                     res_data.flat[ind] = res
 
                     if ragged is False:
@@ -4894,7 +4895,8 @@ class BaseSignal(FancySlicing,
             from builtins import map
 
             for ind, res in zip(range(res_data.size), map(func, zip(*iterators))):
-                res = np.asarray(res)
+                if not hasattr(res, '__array__'):
+                    res = np.asarray(res)
                 res_data.flat[ind] = res
 
                 if ragged is False:
