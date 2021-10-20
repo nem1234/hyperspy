@@ -67,7 +67,8 @@ jTYPE = {
 }
 
 
-def file_reader(filename, **kwds):
+def file_reader(filename, fixed_encoding = "", **kwds):
+    decode.force_encoding = fixed_encoding
     dictionary = []
     file_ext = os.path.splitext(filename)[-1][1:].lower()
     if file_ext == "asw":
@@ -755,11 +756,38 @@ extension_to_reader_mapping = {"img": read_img,
                                "eds": read_eds}
 
 
+# JEOL EDS software Version 3.8 uses "shift_jis" encoding.
+# This may be replaced with "utf-8" for newer EDS software.
+# See https://github.com/hyperspy/hyperspy/issues/2812
 def decode(bytes_string):
-    try:
-        string = bytes_string.decode("utf-8")
-    except:
-        # See https://github.com/hyperspy/hyperspy/issues/2812
-        string = bytes_string.decode("shift_jis")
+    if (decode.fixed_encoding):
+        try:
+            return bytes_string.decode(decode.fixed_encoding)
+        except:
+            return "Read Error (Invalid Charset)"
 
-    return string
+    try:
+        # assume that the encoding is same as that used last time
+        return bytes_string.decode(decode.encoding)
+    except:
+        pass
+    
+    # Try other encodings
+    # I'm not sure this sequence is best or not
+    for enc in ["utf-8", "shift_jis", "iso8859-1"]:
+        if enc == decode.encoding:
+            continue # skip because this always make exception
+        try:
+            string = bytes_string.decode(enc)
+            decode. encoding = enc
+            _logger.info("text charset is changed to "+enc)
+            return string
+        except:
+            pass
+    return "Read Error (Invalid Charset)"
+
+
+# current charset 
+decode.encoding = "utf-8"
+
+decode.fixed_encoding = ""

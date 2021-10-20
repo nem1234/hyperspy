@@ -1768,6 +1768,7 @@ Extra loading arguments
   the missing data are filled with zeros. If ``sum_frames=True``, this argument
   will be ignored to enforce consistent sum over the mapped area. 
   (default True).
+- ``fixed_encoding`` : set charset of text when decoding EDS files. fixed_encoding=``shift_jis`` is suitable for Analysis Station version 3.8 Japanese edition.
 
 
 Example of loading data downsampled, and with energy range cropped with the
