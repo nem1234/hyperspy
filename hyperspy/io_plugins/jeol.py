@@ -92,7 +92,9 @@ def file_reader(filename, **kwds):
                                     sub_ext = os.path.splitext(subfile)[-1][1:]
                                     file_path = os.path.join(filepath, subfile)
                                     if sub_ext in extension_to_reader_mapping.keys():
-                                        reader_function = extension_to_reader_mapping[sub_ext]
+                                        reader_function = extension_to_reader_mapping[
+                                            sub_ext
+                                        ]
                                         d = reader_function(file_path, scale, **kwds)
                                         dictionary.append(d)
         else:
@@ -183,17 +185,25 @@ def read_img(filename, scale=None, **kwargs):
     return dictionary
 
 
-def read_pts(filename, scale=None, rebin_energy=1, sum_frames=True,
-             SI_dtype=np.uint8, cutoff_at_kV=None, downsample=1,
-             only_valid_data=True, **kwargs):
+def read_pts(
+    filename,
+    scale=None,
+    rebin_energy=1,
+    sum_frames=True,
+    SI_dtype=np.uint8,
+    cutoff_at_kV=None,
+    downsample=1,
+    only_valid_data=True,
+    **kwargs,
+):
     fd = open(filename, "br")
     file_magic = np.fromfile(fd, "<I", 1)[0]
 
     def check_multiple(factor, number, string):
         if factor > 1 and number % factor != 0:
-            raise ValueError(f'`{string}` must be a multiple of {number}.')
+            raise ValueError(f"`{string}` must be a multiple of {number}.")
 
-    check_multiple(rebin_energy, 4096, 'rebin_energy')
+    check_multiple(rebin_energy, 4096, "rebin_energy")
     rebin_energy = int(rebin_energy)
 
     if file_magic == 304:
@@ -214,19 +224,20 @@ def read_pts(filename, scale=None, rebin_energy=1, sum_frames=True,
 
         if isinstance(downsample, Iterable):
             if len(downsample) > 2:
-                raise ValueError("`downsample` can't be an iterable of length "
-                                 "different from 2.")
+                raise ValueError(
+                    "`downsample` can't be an iterable of length " "different from 2."
+                )
             downsample_width = downsample[0]
             downsample_height = downsample[1]
-            check_multiple(downsample_width, width, 'downsample[0]')
-            check_multiple(downsample_height, height, 'downsample[1]')
+            check_multiple(downsample_width, width, "downsample[0]")
+            check_multiple(downsample_height, height, "downsample[1]")
         else:
             downsample_width = downsample_height = int(downsample)
-            check_multiple(downsample_width, width, 'downsample')
-            check_multiple(downsample_height, height, 'downsample')
+            check_multiple(downsample_width, width, "downsample")
+            check_multiple(downsample_height, height, "downsample")
 
-        check_multiple(downsample_width, width, 'downsample[0]')
-        check_multiple(downsample_height, height, 'downsample[1]')
+        check_multiple(downsample_width, width, "downsample[0]")
+        check_multiple(downsample_height, height, "downsample[1]")
 
         # Normalisation factor for the x and y position in the stream; depends
         # on the downsampling and the size of the navigation space
@@ -264,7 +275,7 @@ def read_pts(filename, scale=None, rebin_energy=1, sum_frames=True,
         if cutoff_at_kV is not None:
             channel_number = int(
                 np.round((cutoff_at_kV - energy_offset) / energy_scale)
-                )
+            )
 
         axes = [
             {
@@ -297,31 +308,44 @@ def read_pts(filename, scale=None, rebin_energy=1, sum_frames=True,
         if not sum_frames:
             data_shape.insert(0, sweep)
             if not only_valid_data:
-                data_shape[0] += 1 # for partly swept frame
-            axes.insert(0, {
-                "index_in_array": 0,
-                "name": "Frame",
-                "size": sweep,
-                "offset": 0,
-                "scale": pixel_time*height*width/1E3,
-                "units": 's',
-            })
+                data_shape[0] += 1  # for partly swept frame
+            axes.insert(
+                0,
+                {
+                    "index_in_array": 0,
+                    "name": "Frame",
+                    "size": sweep,
+                    "offset": 0,
+                    "scale": pixel_time * height * width / 1e3,
+                    "units": "s",
+                },
+            )
 
         data = np.zeros(data_shape, dtype=SI_dtype)
         datacube_reader = readcube if sum_frames else readcube_frames
-        data, swept = datacube_reader(rawdata, data, sweep, only_valid_data,
-                                      rebin_energy, channel_number,
-                               width_norm, height_norm, np.iinfo(SI_dtype).max)
+        data, swept = datacube_reader(
+            rawdata,
+            data,
+            sweep,
+            only_valid_data,
+            rebin_energy,
+            channel_number,
+            width_norm,
+            height_norm,
+            np.iinfo(SI_dtype).max,
+        )
 
         if not sum_frames and not only_valid_data:
-            if  (sweep == swept):
+            if sweep == swept:
                 data = data[:sweep]
             else:
                 axes[0]["size"] = swept
 
         if sweep < swept and only_valid_data:
-            _logger.info("The last frame (sweep) is incomplete because the acquisition stopped during this frame. The partially acquired frame is ignored. Use 'sum_frames=False, only_valid_data=False' to read all frames individually, including the last partially completed frame.")
-                
+            _logger.info(
+                "The last frame (sweep) is incomplete because the acquisition stopped during this frame. The partially acquired frame is ignored. Use 'sum_frames=False, only_valid_data=False' to read all frames individually, including the last partially completed frame."
+            )
+
         hv = meas_data_header["MeasCond"]["AccKV"]
         if hv <= 30.0:
             mode = "SEM"
@@ -452,8 +476,17 @@ def parsejeol(fd):
 
 
 @numba.njit(cache=True)
-def readcube(rawdata, hypermap, sweep, only_valid_data, rebin_energy, 
-            channel_number, width_norm, height_norm, max_value):  # pragma: no cover
+def readcube(
+    rawdata,
+    hypermap,
+    sweep,
+    only_valid_data,
+    rebin_energy,
+    channel_number,
+    width_norm,
+    height_norm,
+    max_value,
+):  # pragma: no cover
     frame_idx = 0
     previous_y = 0
     for value in rawdata:
@@ -465,22 +498,33 @@ def readcube(rawdata, hypermap, sweep, only_valid_data, rebin_energy,
                 frame_idx += 1
                 if frame_idx >= sweep:
                     # skip incomplete_frame
-                    break 
+                    break
             previous_y = y
         elif value >= 45056 and value < 49152:
             z = int((value - 45056) / rebin_energy)
             if z < channel_number:
                 hypermap[y, x, z] += 1
                 if hypermap[y, x, z] == max_value:
-                    raise ValueError("The range of the dtype is too small, "
-                                     "use `SI_dtype` to set a dtype with "
-                                     "higher range.")
+                    raise ValueError(
+                        "The range of the dtype is too small, "
+                        "use `SI_dtype` to set a dtype with "
+                        "higher range."
+                    )
     return hypermap, frame_idx + 1
 
 
 @numba.njit(cache=True)
-def readcube_frames(rawdata, hypermap, sweep, only_valid_data, rebin_energy, channel_number,
-             width_norm, height_norm, max_value):  # pragma: no cover
+def readcube_frames(
+    rawdata,
+    hypermap,
+    sweep,
+    only_valid_data,
+    rebin_energy,
+    channel_number,
+    width_norm,
+    height_norm,
+    max_value,
+):  # pragma: no cover
     """
     We need to create a separate function, because numba.njit doesn't play well
     with an array having its shape depending on something else
@@ -494,7 +538,7 @@ def readcube_frames(rawdata, hypermap, sweep, only_valid_data, rebin_energy, cha
             y = int((value - 36864) / height_norm)
             if y < previous_y:
                 frame_idx += 1
-                if frame_idx == sweep: # incomplete frame exist
+                if frame_idx == sweep:  # incomplete frame exist
                     if only_valid_data:
                         break  # ignore
                 if frame_idx > sweep:
@@ -505,9 +549,11 @@ def readcube_frames(rawdata, hypermap, sweep, only_valid_data, rebin_energy, cha
             if z < channel_number:
                 hypermap[frame_idx, y, x, z] += 1
                 if hypermap[frame_idx, y, x, z] == max_value:
-                    raise ValueError("The range of the dtype is too small, "
-                                     "use `SI_dtype` to set a dtype with "
-                                     "higher range.")
+                    raise ValueError(
+                        "The range of the dtype is too small, "
+                        "use `SI_dtype` to set a dtype with "
+                        "higher range."
+                    )
     return hypermap, frame_idx + 1
 
 
@@ -749,10 +795,12 @@ def read_eds(filename, **kwargs):
     return dictionary
 
 
-extension_to_reader_mapping = {"img": read_img,
-                               "map": read_img,
-                               "pts": read_pts,
-                               "eds": read_eds}
+extension_to_reader_mapping = {
+    "img": read_img,
+    "map": read_img,
+    "pts": read_pts,
+    "eds": read_eds,
+}
 
 
 def decode(bytes_string):
