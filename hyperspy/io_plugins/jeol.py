@@ -227,6 +227,8 @@ def read_pts(
         width, height = meas_data_header["Meas Cond"]["Pixels"].split("x")
         width = int(width)
         height = int(height)
+        org_width = width
+        org_height = height
 
         if isinstance(downsample, Iterable):
             if len(downsample) > 2:
@@ -259,6 +261,16 @@ def read_pts(
         # read spectrum image
         rawdata = np.fromfile(fd, dtype="u2")
 
+        import time
+        t0 = time.time()
+        for i in range(100):
+            frame_list, valid_last = pts_prescan(rawdata, org_width, org_height)
+        t1 = time.time()
+        for i in range(100):
+            frame_list, valid_last = pts_prescan2(rawdata, org_width, org_height)
+        t2 = time.time()
+        print(t1-t0, t2-t1)
+        
         if scale is not None:
             xscale = -scale[2] / width
             yscale = scale[3] / height
@@ -482,10 +494,131 @@ def parsejeol(fd):
 
 
 @numba.njit(cache=True)
+def pts_prescan(rawdata, width, height):
+    """
+    need to prescan data section because the sweep count in the header
+    sometime shows broken value depend on the JEOL software version.
+
+    Returns
+    --------------
+    1. list of frame head address + end of rawdata
+    2. is the last frame valid(True) or not(False)
+    3. is the STEM/SEM-BF data available(True) or not(False)
+    """
+    MAX_VAL = 4096
+    width_norm = int(MAX_VAL / width)
+    height_norm = int(MAX_VAL / width)
+    max_x = MAX_VAL - width_norm
+    max_y = MAX_VAL - height_norm
+
+    previous_x = 0
+    previous_y = MAX_VAL
+    pointer = 0
+    frame_list = []
+
+    has_image = False
+    valid = False
+    
+    for value in rawdata:
+        value_type = value & 0xF000
+        if value_type == 0x8000:  # pos x
+            previous_x = value & 0xFFF
+        elif value_type == 0x9000:  # pox y 
+            y = value & 0xFFF
+            if y < previous_y:
+                frame_list.append(pointer)
+            previous_y = y
+        elif value_type == 0xa000: # image
+            has_image = True
+        #elif value_type == 0xb000: #EDS
+        #    pass
+        pointer += 1
+
+    if previous_y == max_y and (previous_x == max_x or not has_image):
+        # if the STEM-ADF/SEM-BF image is not included in pts file,
+        # maximum value of x is usually smaller than max_x,
+        # sometimes no x-ray events occur in a last few pixels.
+        # So, only the y value is checked
+        valid = True
+    frame_list.append(pointer)  # end of last frame
+    # print("pts_prescan:----------------------")
+    # print(max_x, previous_x, max_y, previous_y)
+    # print(frame_list, valid, has_image)
+    # print("----------------------------------")
+    return frame_list, valid, has_image
+
+
+@numba.njit(cache=True)
+def readframe(
+    rawdata,
+    frame_idx,
+    edsmap,
+#    stemmap,
+    rebin_energy,
+    channel_number,
+    width_norm,
+    height_norm,
+    max_value,
+):  # pragma: no cover
+    for value in rawdata:
+        dtype = value & 0xf000
+        val = value & 0xfff
+        if dtype == 0x8000:
+            x = val // width_norm
+        elif dtype == 0x9000:
+            y = val // height_norm
+        # elif dtype == 0xa000:
+        #    stemmap[y, x] = val
+        elif dtype == 0xb000:
+            z = val // rebin_energy
+            if z < channel_number:
+                edsmap[y, x, z] += 1
+                if edsmap[y, x, z] == max_value:
+                    raise ValueError(
+                        "The range of the dtype is too small, "
+                        "use `SI_dtype` to set a dtype with "
+                        "higher range."
+                    )
+
+@numba.njit(cache=True)
+def readcube2(
+    rawdata,
+    hypermap,
+    frame_list,
+    pointer_list,    
+    only_valid_data,
+    rebin_energy,
+    channel_number,
+    width_norm,
+    height_norm,
+    max_value,
+    frame_step,
+):  # pragma: no cover
+    frame_idx = 0
+    frame_record = 0
+    previous_y = 0
+    for frame in frame_list:
+        if frame < 0 or frame >= len(pointer_list):
+            raise ValueError(
+                f"The value of frame {frame} is out of range"
+            )
+        p_start = pointer_list[frame]
+        p_end = pointer_list[frame+1]
+        read_frame(rawdata[p_start:p_end-p_start],
+                   hypermap[frame_record],
+                   edsmap,
+                   #    stemmap,
+                   rebin_energy, channel_number,
+                   width_norm, height_norm, max_value)
+
+    return hypermap, stemmap
+
+@numba.njit(cache=True)
 def readcube(
     rawdata,
     hypermap,
-    sweep,
+    frame_list,
+    pointer_list,
     only_valid_data,
     rebin_energy,
     channel_number,
@@ -519,50 +652,7 @@ def readcube(
     return hypermap, frame_idx + 1
 
 
-@numba.njit(cache=True)
-def readcube_frames(
-    rawdata,
-    hypermap,
-    sweep,
-    only_valid_data,
-    rebin_energy,
-    channel_number,
-    width_norm,
-    height_norm,
-    max_value,
-):  # pragma: no cover
-    """
-    We need to create a separate function, because numba.njit doesn't play well
-    with an array having its shape depending on something else
-    """
-    frame_idx = 0
-    previous_y = 0
-    for value in rawdata:
-        if value >= 32768 and value < 36864:
-            x = int((value - 32768) / width_norm)
-        elif value >= 36864 and value < 40960:
-            y = int((value - 36864) / height_norm)
-            if y < previous_y:
-                frame_idx += 1
-                if frame_idx == sweep:  # incomplete frame exist
-                    if only_valid_data:
-                        break  # ignore
-                if frame_idx > sweep:
-                    raise ValueError("The frame number is too large")
-            previous_y = y
-        elif value >= 45056 and value < 49152:
-            z = int((value - 45056) / rebin_energy)
-            if z < channel_number:
-                hypermap[frame_idx, y, x, z] += 1
-                if hypermap[frame_idx, y, x, z] == max_value:
-                    raise ValueError(
-                        "The range of the dtype is too small, "
-                        "use `SI_dtype` to set a dtype with "
-                        "higher range."
-                    )
-    return hypermap, frame_idx + 1
-
-
+                
 def read_eds(filename, **kwargs):
     header = {}
     fd = open(filename, "br")
