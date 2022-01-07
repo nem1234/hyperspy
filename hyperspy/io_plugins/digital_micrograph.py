@@ -494,6 +494,7 @@ class ImageObject(object):
         self.file = file
         self._order = order if order else "C"
         self._record_by = record_by
+        self.marker_offsets = (-0.5, -0.5) # (dy, dx)
 
     @property
     def shape(self):
@@ -824,6 +825,15 @@ class ImageObject(object):
             elif 'Microscope' in ImageTags['Microscope_Info'].keys():
                 return ImageTags.Microscope_Info.Microscope
 
+    def _rgb_color(self, color_raw):
+        color = []
+        for raw_value in color_raw:
+            if raw_value<0:  # convert signed 16 bit to unsigned
+                raw_value += 2**16
+            raw_value /= (2**16-1)
+            color.append(raw_value)
+        return tuple(color)
+    
     def _get_marker_color(self, annotation):
         if ('ForegroundColor' in annotation) or ('Color' in annotation):
             # There seems to be 3 different colors in annotations in
@@ -837,18 +847,19 @@ class ImageObject(object):
                 color_raw = annotation['Color']
             else:
                 color_raw = annotation['ForegroundColor']
-            # Colors in DM are saved as negative values
-            # Some values are also in 16-bit
-            color = []
-            for raw_value in color_raw:
-                raw_value = abs(raw_value)
-                if raw_value > 1:
-                    raw_value /= 2**16
-                color.append(raw_value)
-            color = tuple(color)
+            color = self._rgb_color(color_raw)
         else:
             color = 'red'
         return(color)
+
+    def _set_color(self, annotation, marker_properties):
+        if annotation['FillMode']==1:
+            marker_properties['fill'] = True
+            marker_properties['facecolor'] = self._rgb_color(annotation['ForegroundColor'])
+            marker_properties['edgecolor'] = self._rgb_color(annotation['BackgroundColor'])
+        else:
+            marker_properties['fill'] = False
+            marker_properties['edgecolor'] = self._rgb_color(annotation['ForegroundColor'])
 
     def _get_marker_props(self, annotation):
         marker_properties = {}
@@ -858,16 +869,25 @@ class ImageObject(object):
             annotation_type = annotation['AnnotationType']
             if annotation_type == 2:
                 temp_dict['marker_type'] = "LineSegment"
-                marker_properties['linewidth'] = 2
+                marker_properties['linewidth'] = 1
             elif annotation_type == 3:
-                _logger.info('Arrow marker not loaded: not implemented')
+                temp_dict['marker_type'] = "Arrow"
+                marker_properties['arrow_style'] = '<-'
+                marker_properties['linewidth'] = 1
             elif annotation_type == 4:
-                _logger.info('Double arrow marker not loaded: not implemented')
+                temp_dict['marker_type'] = "Arrow"
+                marker_properties['arrow_style'] = '<->'
+                marker_properties['linewidth'] = 1
             elif annotation_type == 5:
                 temp_dict['marker_type'] = "Rectangle"
-                marker_properties['linewidth'] = 2
+                marker_properties['linewidth'] = 1
+                self._set_color(annotation, marker_properties)
+                print(marker_properties)
             elif annotation_type == 6:
-                _logger.info('Ellipse marker not loaded: not implemented')
+                temp_dict['marker_type'] = "Ellipse"
+                marker_properties['linewidth'] = 1
+                self._set_color(annotation, marker_properties)
+                print(marker_properties)
             elif annotation_type == 8:
                 _logger.info('Mask spot marker not loaded: not implemented')
             elif annotation_type == 9:
@@ -875,6 +895,22 @@ class ImageObject(object):
             elif annotation_type == 13:
                 temp_dict['marker_type'] = "Text"
                 marker_text = annotation['Text']
+                marker_properties['color'] = self._rgb_color(annotation['ForegroundColor'])
+                marker_properties['va'] = 'top'
+                if annotation['FillMode']==1:
+                    marker_properties['backgroundcolor'] = self._rgb_color(annotation['BackgroundColor'])
+                if 'TextFormat' in annotation:
+                    _format = annotation['TextFormat']
+                    ## FontFaceName is not compatible with matplotlib
+                    # if 'FontFaceName' in _format:
+                    #    marker_properties['fontfamily']=_format['FontFaceName']
+
+                    ## FontSize is different to the original dm4 file due to
+                    ##   the difference of font face
+                    ## Font size scaling of 50 is a simple approximation
+                    ## Posion of text is moved due to the text padding
+                    if 'FontSize' in _format:
+                        marker_properties['fontsize']=_format['FontSize']*50
             elif annotation_type == 15:
                 _logger.info(
                         'Mask band pass marker not loaded: not implemented')
@@ -901,8 +937,7 @@ class ImageObject(object):
     def get_markers_dict(self, tags_dict):
         axes = self.get_axes_dict()
         scale_y, scale_x = self.scales[-2], self.scales[-1]
-        offset_y, offset_x = self.offsets[-2], self.offsets[-1]
-
+        offset_y, offset_x = self.offsets[-2] + self.marker_offsets[-2], self.offsets[-1] + self.marker_offsets[-1]
         markers_dict = {}
         annotations_dict = tags_dict[
                 'DocumentObjectList']['TagGroup0']['AnnotationGroupList']
@@ -912,6 +947,12 @@ class ImageObject(object):
             marker_properties, temp_dict, marker_text = self._get_marker_props(
                     annotation)
             if 'marker_type' in temp_dict:
+                if temp_dict['marker_type'] == 'Ellipse':
+                    # (position[0],[1]) should be center
+                    width = position[2] - position[0]
+                    height = position[3] - position[1]
+                    position = (position[0] + width/2, position[1] + height/2,
+                                position[2] + width/2, position[3] + height/2)
                 color = self._get_marker_color(annotation)
                 if 'Label' in annotation:
                     # Some annotations contains an empty label, which are
@@ -928,14 +969,19 @@ class ImageObject(object):
                                 'text': marker_label,
                                 },
                             'marker_properties': {
-                                'color': color,
                                 'va': 'bottom',
                                 }
                             }
                         marker_name = "Text" + str(annotation['UniqueID'])
                         markers_dict[marker_name] = label_marker_dict
 
-                marker_properties['color'] = color
+                if ('facecolor' in marker_properties or
+                    'edgecolor' in marker_properties):
+                    if 'color' in marker_properties:
+                        del marker_properties['color']
+                else:
+                    marker_properties['color'] = color
+                print(marker_properties)
                 temp_dict['plot_on_signal'] = True,
                 temp_dict['data'] = {
                             'y1': position[0]*scale_y+offset_y,
