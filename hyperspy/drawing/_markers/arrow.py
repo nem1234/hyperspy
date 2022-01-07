@@ -16,12 +16,11 @@
 # You should have received a copy of the GNU General Public License
 # along with  HyperSpy.  If not, see <http://www.gnu.org/licenses/>.
 
-import matplotlib.pyplot as plt
-
+import matplotlib.patches as patches
 from hyperspy.drawing.marker import MarkerBase
 
 
-class Rectangle(MarkerBase):
+class Arrow(MarkerBase):
 
     """Rectangle marker that can be added to the signal figure
 
@@ -62,42 +61,41 @@ class Rectangle(MarkerBase):
 
     def __init__(self, x1, y1, x2, y2, **kwargs):
         MarkerBase.__init__(self)
-        lp = {'edgecolor': 'black', 'fill': None, 'linewidth': 1}
+        lp = {'color': 'black', 'fill': None, 'linewidth': 1, 'arrow_style': '->'}
         self.marker_properties = lp
         self.set_data(x1=x1, y1=y1, x2=x2, y2=y2)
         self.set_marker_properties(**kwargs)
-        self.name = 'rectangle'
+        self.name = 'arrow'
 
     def __repr__(self):
-        string = "<marker.{}, {} (x1={},x2={},y1={},y2={},edgecolor={},facecolor={})>".format(
+        string = "<marker.{}, {} (x1={},x2={},y1={},y2={},color={})>".format(
             self.__class__.__name__,
             self.name,
             self.get_data_position('x1'),
             self.get_data_position('x2'),
             self.get_data_position('y1'),
             self.get_data_position('y2'),
-            self.marker_properties['edgecolor'],
-            self.marker_properties['facecolor'],
+            self.marker_properties['color'],
         )
         return(string)
 
     def update(self):
-        if self.auto_update is False:
-            return
-        width = abs(self.get_data_position('x1') -
-                    self.get_data_position('x2'))
-        height = abs(self.get_data_position('y1') -
-                     self.get_data_position('y2'))
-        self.marker.set_xy([self.get_data_position('x1'),
-                            self.get_data_position('y1')])
-        self.marker.set_width(width)
-        self.marker.set_height(height)
+        x1 = self.get_data_position('x1')
+        x2 = self.get_data_position('x2')
+        y1 = self.get_data_position('y1')
+        y2 = self.get_data_position('y2')
+        self.marker.set_data(x1=x1, y1=y1, x2=x2, y2=y2)
 
     def _plot_marker(self):
-        width = abs(self.get_data_position('x1') -
-                    self.get_data_position('x2'))
-        height = abs(self.get_data_position('y1') -
-                     self.get_data_position('y2'))
-        self.marker = self.ax.add_patch(plt.Rectangle(
-            (self.get_data_position('x1'), self.get_data_position('y1')),
-            width, height, **self.marker_properties))
+        x1 = self.get_data_position('x1')
+        y1 = self.get_data_position('y1')
+        x2 = self.get_data_position('x2')
+        y2 = self.get_data_position('y2')
+        color = self.marker_properties['color']
+        arrow_style = self.marker_properties['arrow_style']
+        self.marker = self.ax.annotate('',(x1,y1),(x2,y2), arrowprops={
+            'facecolor':color,
+            'edgecolor':color,
+            'arrowstyle':arrow_style
+        })
+

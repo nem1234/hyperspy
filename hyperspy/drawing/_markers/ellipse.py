@@ -16,12 +16,12 @@
 # You should have received a copy of the GNU General Public License
 # along with  HyperSpy.  If not, see <http://www.gnu.org/licenses/>.
 
-import matplotlib.pyplot as plt
+import matplotlib.patches as patches
 
 from hyperspy.drawing.marker import MarkerBase
 
 
-class Rectangle(MarkerBase):
+class Ellipse(MarkerBase):
 
     """Rectangle marker that can be added to the signal figure
 
@@ -66,7 +66,7 @@ class Rectangle(MarkerBase):
         self.marker_properties = lp
         self.set_data(x1=x1, y1=y1, x2=x2, y2=y2)
         self.set_marker_properties(**kwargs)
-        self.name = 'rectangle'
+        self.name = 'ellipse'
 
     def __repr__(self):
         string = "<marker.{}, {} (x1={},x2={},y1={},y2={},edgecolor={},facecolor={})>".format(
@@ -98,6 +98,7 @@ class Rectangle(MarkerBase):
                     self.get_data_position('x2'))
         height = abs(self.get_data_position('y1') -
                      self.get_data_position('y2'))
-        self.marker = self.ax.add_patch(plt.Rectangle(
+        self.marker = self.ax.add_patch(patches.Ellipse(
             (self.get_data_position('x1'), self.get_data_position('y1')),
             width, height, **self.marker_properties))
+        print(self.marker_properties)
