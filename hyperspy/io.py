@@ -734,6 +734,7 @@ def dict2signal(signal_dict, lazy=False):
             mp['Markers'],
             axes_manager=signal.axes_manager)
         del signal.metadata.Markers
+        signal.metadata.Markers = {}
         signal.metadata.Markers = markers_dict
     return signal
 
