@@ -91,12 +91,8 @@ class Rectangle(MarkerBase):
     def update(self):
         if self.auto_update is False:
             return
-        width = abs(self.get_data_position('x1') -
-                    self.get_data_position('x2'))
-        height = abs(self.get_data_position('y1') -
-                     self.get_data_position('y2'))
-        self.marker.set_xy([self.get_data_position('x1'),
-                            self.get_data_position('y1')])
+        xy, _, width, height = self.get_xywh()
+        self.marker.set_xy(xy)
         self.marker.set_width(width)
         self.marker.set_height(height)
 
@@ -108,5 +104,3 @@ class Rectangle(MarkerBase):
         self.marker = self.ax.add_patch(patches.Rectangle(
             (self.get_data_position('x1'), self.get_data_position('y1')),
             width, height, **self.marker_properties))
-
-
