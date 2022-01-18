@@ -40,3 +40,5 @@ from hyperspy.drawing._markers.vertical_line import \
     VerticalLine as vertical_line
 from hyperspy.drawing._markers.vertical_line_segment import \
     VerticalLineSegment as vertical_line_segment
+from hyperspy.drawing._markers.arrow import Arrow as arrow
+from hyperspy.drawing._markers.ellipse import Ellipse as ellipse
