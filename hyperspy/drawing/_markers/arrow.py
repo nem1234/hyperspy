@@ -73,7 +73,7 @@ class Arrow(MarkerBase):
         self.set_marker_properties(**kwargs)
         mp = self.marker_properties
         if 'color' in mp:
-            mp['edgecolor'] = mp['color']
+            mp['arrowprops']['edgecolor'] = mp['color']
             del mp['color']
         self.name = 'arrow'
 

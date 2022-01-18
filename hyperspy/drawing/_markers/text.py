@@ -87,5 +87,5 @@ class Text(MarkerBase):
                                        (self.get_data_position('x1'),
                                         self.get_data_position('y1')),
                                        **self.marker_properties)
-        if 'zorder' in self.marker_properties:
-            self.marker.set_zorder(self.marker_properties['zorder'])
+#        if 'zorder' in self.marker_properties:
+#            self.marker.set_zorder(self.marker_properties['zorder'])

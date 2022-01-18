@@ -86,6 +86,7 @@ class Ellipse(MarkerBase):
         y1 = self.get_data_position('y1')
         width = self.get_data_position('x2')
         height = self.get_data_position('y2')
+<<<<<<< HEAD
         self.marker.set_center([x1,y1])
         try:
             self.marker.set_width(width)
@@ -94,6 +95,11 @@ class Ellipse(MarkerBase):
             self.marker._width = width
             self.marker._height = height
             self.marker.stale = True
+=======
+        self.marker.set_xy([x1,y1])
+        self.marker.set_width(width)
+        self.marker.set_height(height)
+>>>>>>> Add test, modify parameters for arrow and ellipse
 
     def _plot_marker(self):
         x1 = self.get_data_position('x1')
@@ -102,3 +108,7 @@ class Ellipse(MarkerBase):
         height = self.get_data_position('y2')
         self.marker = self.ax.add_patch(patches.Ellipse(
             [x1,y1], width, height, **self.marker_properties))
+<<<<<<< HEAD
+=======
+
+>>>>>>> Add test, modify parameters for arrow and ellipse
