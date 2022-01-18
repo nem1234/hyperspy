@@ -91,8 +91,12 @@ class Rectangle(MarkerBase):
     def update(self):
         if self.auto_update is False:
             return
-        xy, _, width, height = self.get_xywh()
-        self.marker.set_xy(xy)
+        width = abs(self.get_data_position('x1') -
+                    self.get_data_position('x2'))
+        height = abs(self.get_data_position('y1') -
+                     self.get_data_position('y2'))
+        self.marker.set_xy([self.get_data_position('x1'),
+                            self.get_data_position('y1')])
         self.marker.set_width(width)
         self.marker.set_height(height)
 
