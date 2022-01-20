@@ -46,7 +46,7 @@ setup_path = os.path.dirname(__file__)
 
 
 install_req = ['scipy>=1.1',
-               'matplotlib>=3.1.0,<3.5',
+               'matplotlib>=3.1.3,<3.5',
                'numpy>=1.17.1',
                'traits>=4.5.0',
                'natsort',
@@ -58,7 +58,9 @@ install_req = ['scipy>=1.1',
                'packaging',
                'python-dateutil>=2.5.0',
                'ipyparallel',
-               'dask[array]>=2.1.0',
+               # https://github.com/ipython/ipython/pull/13466
+               'ipython!=8.0',
+               'dask[array]>=2.11.0',
                # fsspec is missing from dask dependencies for dask < 2021.3.1
                'fsspec',
                'scikit-image>=0.15',
@@ -71,7 +73,8 @@ install_req = ['scipy>=1.1',
                # prettytable is maintained and ptable is an unmaintained fork
                'prettytable',
                'tifffile>=2020.2.16',
-               'numba',
+               # non-uniform axis requirement
+               'numba>=0.52',
                 # included in stdlib since v3.8, but this required version requires Python 3.10
                 # We can remove this requirement when the minimum supported version becomes Python 3.10
                'importlib_metadata>=3.6',
@@ -353,7 +356,10 @@ with update_version_when_dev() as version:
                 'tests/io/hdf5_files/*.hspy',
                 'tests/io/JEOL_files/*',
                 'tests/io/JEOL_files/Sample/00_View000/*',
+                'tests/io/JEOL_files/InvalidFrame/*',
+                'tests/io/JEOL_files/InvalidFrame/Sample/00_Dummy-Data/*',
                 'tests/io/tiff_files/*.tif',
+                'tests/io/tiff_files/*.tif.gz',
                 'tests/io/tiff_files/*.dm3',
                 'tests/io/npy_files/*.npy',
                 'tests/io/unf_files/*.unf',
