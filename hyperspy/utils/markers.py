@@ -42,3 +42,21 @@ from hyperspy.drawing._markers.vertical_line_segment import \
     VerticalLineSegment as vertical_line_segment
 from hyperspy.drawing._markers.arrow import Arrow as arrow
 from hyperspy.drawing._markers.ellipse import Ellipse as ellipse
+
+
+__all__ = [
+    'arrow',
+    'ellipse',
+    'horizontal_line',
+    'horizontal_line_segment',
+    'line_segment',
+    'point',
+    'rectangle',
+    'text',
+    'vertical_line',
+    'vertical_line_segment',
+    ]
+
+
+def __dir__():
+    return sorted(__all__)
