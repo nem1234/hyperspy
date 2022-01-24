@@ -1,28 +1,29 @@
 # -*- coding: utf-8 -*-
-# Copyright 2007-2021 The HyperSpy developers
+# Copyright 2007-2022 The HyperSpy developers
 #
-# This file is part of  HyperSpy.
+# This file is part of HyperSpy.
 #
-#  HyperSpy is free software: you can redistribute it and/or modify
+# HyperSpy is free software: you can redistribute it and/or modify
 # it under the terms of the GNU General Public License as published by
 # the Free Software Foundation, either version 3 of the License, or
 # (at your option) any later version.
 #
-#  HyperSpy is distributed in the hope that it will be useful,
+# HyperSpy is distributed in the hope that it will be useful,
 # but WITHOUT ANY WARRANTY; without even the implied warranty of
-# MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+# MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
 # GNU General Public License for more details.
 #
 # You should have received a copy of the GNU General Public License
-# along with  HyperSpy.  If not, see <http://www.gnu.org/licenses/>.
+# along with HyperSpy. If not, see <http://www.gnu.org/licenses/>.
 
 import logging
 from collections import OrderedDict
 import scipy.constants as constants
 import numpy as np
 from dask.array import Array as daArray
-from pint import UnitRegistry, UndefinedUnitError
+from pint import UndefinedUnitError
 
+from hyperspy.api_nogui import _ureg
 from hyperspy._signals.signal2d import Signal2D
 from hyperspy.signal import BaseSignal
 from hyperspy._signals.signal1d import Signal1D
@@ -737,9 +738,8 @@ class HologramImage(Signal2D):
                                        max_workers=max_workers)
         fringe_sampling = np.divide(1., carrier_freq_px)
 
-        ureg = UnitRegistry()
         try:
-            units = ureg.parse_expression(
+            units = _ureg.parse_expression(
                 str(self.axes_manager.signal_axes[0].units))
         except UndefinedUnitError:
             raise ValueError('Signal axes units should be defined.')
@@ -781,7 +781,7 @@ class HologramImage(Signal2D):
                     1000 / (2 * constants.m_e * constants.c ** 2))
         wavelength = constants.h / np.sqrt(momentum) * 1e9  # in nm
         carrier_freq_quantity = wavelength * \
-            ureg('nm') * carrier_freq_units / units * ureg('rad')
+            _ureg('nm') * carrier_freq_units / units * _ureg('rad')
         carrier_freq_mrad = carrier_freq_quantity.to('mrad').magnitude
 
         # Calculate fringe contrast:

@@ -1,20 +1,20 @@
 # -*- coding: utf-8 -*-
-# Copyright 2007-2021 The HyperSpy developers
+# Copyright 2007-2022 The HyperSpy developers
 #
-# This file is part of  HyperSpy.
+# This file is part of HyperSpy.
 #
-#  HyperSpy is free software: you can redistribute it and/or modify
+# HyperSpy is free software: you can redistribute it and/or modify
 # it under the terms of the GNU General Public License as published by
 # the Free Software Foundation, either version 3 of the License, or
 # (at your option) any later version.
 #
-#  HyperSpy is distributed in the hope that it will be useful,
+# HyperSpy is distributed in the hope that it will be useful,
 # but WITHOUT ANY WARRANTY; without even the implied warranty of
-# MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+# MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
 # GNU General Public License for more details.
 #
 # You should have received a copy of the GNU General Public License
-# along with  HyperSpy.  If not, see <http://www.gnu.org/licenses/>.
+# along with HyperSpy. If not, see <http://www.gnu.org/licenses/>.
 
 import numbers
 import logging
@@ -24,7 +24,6 @@ import dask.array as da
 import traits.api as t
 from scipy import constants
 from prettytable import PrettyTable
-import pint
 
 from hyperspy.signal import BaseSetMetadataItems, BaseSignal
 from hyperspy._signals.signal1d import (Signal1D, LazySignal1D)
@@ -50,7 +49,6 @@ from hyperspy.docstrings.signal import (
 
 
 _logger = logging.getLogger(__name__)
-_ureg = pint.UnitRegistry()
 
 
 @add_gui_method(toolkey="hyperspy.microscope_parameters_EELS")
