@@ -17,7 +17,6 @@
 # along with HyperSpy. If not, see <http://www.gnu.org/licenses/>.
 
 import matplotlib.pyplot as plt
-from matplotlib.collections import PatchCollection
 import matplotlib.patches as patches
 
 from hyperspy.drawing.marker import MarkerBase
@@ -44,8 +43,10 @@ class Rectangle(MarkerBase):
         The position of the down right of the rectangle in y.
         see x1 arguments
     kwargs :
-        Keywords argument of axvline valid properties (i.e. recognized by
-        mpl.plot).
+        Keywords argument of matplotlib.patches.Rectangle valid properties 
+        (i.e. recognized by mpl.plot).
+        Note that the 'color' keyword is used as the alias of 'edgecolor' 
+        for backward compatibility.
 
     Example
     -------
@@ -65,25 +66,27 @@ class Rectangle(MarkerBase):
     def __init__(self, x1, y1, x2, y2, **kwargs):
         MarkerBase.__init__(self)
         lp = {'edgecolor': 'black', 'facecolor': None, 'fill': None, 'linewidth': 1,
-              'zorder': 0.1}
+              'zorder': None}
         self.marker_properties = lp
         self.set_data(x1=x1, y1=y1, x2=x2, y2=y2)
         self.set_marker_properties(**kwargs)
         mp = self.marker_properties
-        if  'color' in mp:
+        if  'color' in mp: # for backward compatibility
             mp['edgecolor'] = mp['color']
-            mp['facecolor'] = mp['color']
+            # in contrast to matplotlib.patches.Rectangle,
+            # color property in hyperspy do not change facecolor 
             del mp['color']
         self.name = 'rectangle'
 
     def __repr__(self):
-        string = "<marker.{}, {} (x1={},x2={},y1={},y2={},edgecolor={},facecolor={},zorder={})>".format(
+        string = "<marker.{}, {} (x1={},x2={},y1={},y2={},linewidth={},edgecolor={},facecolor={},zorder={})>".format(
             self.__class__.__name__,
             self.name,
             self.get_data_position('x1'),
             self.get_data_position('x2'),
             self.get_data_position('y1'),
             self.get_data_position('y2'),
+            self.marker_properties['linewidth'],
             self.marker_properties['edgecolor'],
             self.marker_properties['facecolor'],
             self.marker_properties['zorder'],
@@ -93,18 +96,22 @@ class Rectangle(MarkerBase):
     def update(self):
         if self.auto_update is False:
             return
-        xy, _, width, height = self.get_xywh()
-        self.marker.set_xy(xy)
+        width = abs(self.get_data_position('x1') -
+                    self.get_data_position('x2'))
+        height = abs(self.get_data_position('y1') -
+                     self.get_data_position('y2'))
+        self.marker.set_xy([self.get_data_position('x1'),
+                            self.get_data_position('y1')])
         self.marker.set_width(width)
         self.marker.set_height(height)
 
     def _plot_marker(self):
-        mp = self.marker_properties
-        if  'color' in mp:
-            mp['edgecolor'] = mp['color']
-            del mp['color']
-        xy, _, width, height = self.get_xywh()
+        width = abs(self.get_data_position('x1') -
+                    self.get_data_position('x2'))
+        height = abs(self.get_data_position('y1') -
+                     self.get_data_position('y2'))
         self.marker = self.ax.add_patch(patches.Rectangle(
-            xy, width, height, **self.marker_properties))
+            (self.get_data_position('x1'), self.get_data_position('y1')),
+            width, height, **self.marker_properties))
 
 

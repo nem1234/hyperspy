@@ -1,5 +1,5 @@
 # -*- coding: utf-8 -*-
-# Copyright 2007-2021 The HyperSpy developers
+# Copyright 2007-2022 The HyperSpy developers
 #
 # This file is part of  HyperSpy.
 #
@@ -41,39 +41,39 @@ class Arrow(MarkerBase):
         The position of the down right of the rectangle in y.
         see x1 arguments
     kwargs :
-        Keywords argument of axvline valid properties (i.e. recognized by
-        mpl.plot).
+        Keywords argument of matplotlib patches.FancyArrowPatch valid properties 
+        (i.e. recognized by mpl.plot).
 
     Example
     -------
     >>> import scipy.misc
     >>> im = hs.signals.Signal2D(scipy.misc.ascent())
-    >>> m = hs.plot.markers.rectangle(x1=150, y1=100, x2=400, y2=400,
-    >>>                                  color='red')
+    >>> m = hs.plot.markers.arrow(x1=150, y1=100, x2=400, y2=400,
+    >>>            arrowprop={'arrowstyle':'<->', edgecolor='red'})
     >>> im.add_marker(m)
 
     Adding a marker permanently to a signal
-
-    >>> im = hs.signals.Signal2D(np.random.random((50, 50))
-    >>> m = hs.plot.markers.rectangle(x1=20, y1=30, x2=40, y2=49)
     >>> im.add_marker(m, permanent=True)
     """
 
     def __init__(self, x1, y1, x2, y2, **kwargs):
         MarkerBase.__init__(self)
-        lp = {'edgecolor': 'black', 'facecolor': None, 'fill': None, 'linewidth': 1, 'arrow_style': '->',
-              'zorder' : 0.1}
+        lp = {'edgecolor': 'black', 'facecolor': None, 
+              'linewidth': None, 'arrowstyle': '->',
+              # size of arrow head
+              'mutation_scale': 12,
+              # both ends of arrow on the exact pos.
+              # default of matplotlib is 2
+              'shrinkA': 0, 'shrinkB': 0, 
+              'zorder': None,
+        }
         self.marker_properties = lp
         self.set_data(x1=x1, y1=y1, x2=x2, y2=y2)
         self.set_marker_properties(**kwargs)
-        mp = self.marker_properties
-        if 'color' in mp:
-            mp['edgecolor'] = mp['color']
-            del mp['color']
         self.name = 'arrow'
 
     def __repr__(self):
-        string = "<marker.{}, {} (x1={},x2={},y1={},y2={},edgecolor={},facecolor={})arrow_style={},fill={},linewidth={},zorder={}>".format(
+        string = "<marker.{}, {} (x1={},x2={},y1={},y2={},edgecolor={},facecolor={},linewidth={},arrowstyle={},mutation_scale={},zorder={})>".format(
             self.__class__.__name__,
             self.name,
             self.get_data_position('x1'),
@@ -82,30 +82,29 @@ class Arrow(MarkerBase):
             self.get_data_position('y2'),
             self.marker_properties['edgecolor'],
             self.marker_properties['facecolor'],
-            self.marker_properties['arrow_style'],
-            self.marker_properties['fill'],
             self.marker_properties['linewidth'],
+            self.marker_properties['arrowstyle'],
+            self.marker_properties['mutation_scale'],
             self.marker_properties['zorder'],
         )
         return(string)
 
     def update(self):
+        if self.auto_update is False:
+            return
         x1 = self.get_data_position('x1')
         x2 = self.get_data_position('x2')
         y1 = self.get_data_position('y1')
         y2 = self.get_data_position('y2')
-        self.marker.set_data(x1=x1, y1=y1, x2=x2, y2=y2)
+        self.marker.set_positions((x1, y1), (x2, y2))
 
     def _plot_marker(self):
-        xy1, xy2, _, _ = self.get_xywh()
+        x1 = self.get_data_position('x1')
+        x2 = self.get_data_position('x2')
+        y1 = self.get_data_position('y1')
+        y2 = self.get_data_position('y2')
         mp = self.marker_properties
-        self.marker = self.ax.annotate('',xy1,xy2, arrowprops={
-            'facecolor' : mp['facecolor'],
-            'edgecolor' : mp['edgecolor'],
-            'arrowstyle' : mp['arrow_style'],
-        })
-        if 'zorder' in self.marker_properties:
-            self.marker.set_zorder(self.marker_properties['zorder'])
-        
+        self.marker = self.ax.add_patch(patches.FancyArrowPatch(
+            (x1,y1), (x2,y2), **self.marker_properties))
 
 
