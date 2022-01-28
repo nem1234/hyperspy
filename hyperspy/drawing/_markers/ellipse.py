@@ -92,8 +92,12 @@ class Ellipse(MarkerBase):
         width = self.get_data_position('x2')
         height = self.get_data_position('y2')
         self.marker.set_center([x1,y1])
-        self.marker.set_width(width)
-        self.marker.set_height(height)
+        try:
+            self.marker.set_width(width)
+            self.marker.set_height(height)
+        except AttributeError:
+            _logger = logging.getLogger(__name__)
+            _logger.warning('This version of matplotlib does not support changing width/height of ellipse. Update to 3.3.x or later.')
 
     def _plot_marker(self):
         x1 = self.get_data_position('x1')
