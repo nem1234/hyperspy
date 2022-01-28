@@ -1,32 +1,34 @@
 # -*- coding: utf-8 -*-
-# Copyright 2007-2021 The HyperSpy developers
+# Copyright 2007-2022 The HyperSpy developers
 #
-# This file is part of  HyperSpy.
+# This file is part of HyperSpy.
 #
-#  HyperSpy is free software: you can redistribute it and/or modify
+# HyperSpy is free software: you can redistribute it and/or modify
 # it under the terms of the GNU General Public License as published by
 # the Free Software Foundation, either version 3 of the License, or
 # (at your option) any later version.
 #
-#  HyperSpy is distributed in the hope that it will be useful,
+# HyperSpy is distributed in the hope that it will be useful,
 # but WITHOUT ANY WARRANTY; without even the implied warranty of
-# MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+# MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
 # GNU General Public License for more details.
 #
 # You should have received a copy of the GNU General Public License
-# along with  HyperSpy.  If not, see <http://www.gnu.org/licenses/>.
+# along with HyperSpy. If not, see <http://www.gnu.org/licenses/>.
 
 from contextlib import contextmanager
 import copy
 import math
 import logging
 
-import numpy as np
 import dask.array as da
-import traits.api as t
-from traits.trait_errors import TraitError
+import numpy as np
 import pint
 from sympy.utilities.lambdify import lambdify
+import traits.api as t
+from traits.trait_errors import TraitError
+
+from hyperspy.api_nogui import _ureg
 from hyperspy.events import Events, Event
 from hyperspy.misc.array_tools import (
     numba_closest_index_round,
@@ -47,7 +49,6 @@ import inspect
 from collections.abc import Iterable
 
 _logger = logging.getLogger(__name__)
-_ureg = pint.UnitRegistry()
 
 
 FACTOR_DOCSTRING = \
@@ -123,7 +124,7 @@ class UnitConversion:
     def __init__(self, units=t.Undefined, scale=1.0, offset=0.0):
         self.units = units
         self.scale = scale
-        self.offset = units
+        self.offset = offset
 
     def _ignore_conversion(self, units):
         if units == t.Undefined:
@@ -131,9 +132,9 @@ class UnitConversion:
         try:
             _ureg(units)
         except pint.errors.UndefinedUnitError:
-            warnings.warn('Unit "{}" not supported for conversion. Nothing '
-                          'done.'.format(units),
-                          )
+            warnings.warn(
+                f"Unit {units} not supported for conversion. Nothing done."
+                )
             return True
         return False
 

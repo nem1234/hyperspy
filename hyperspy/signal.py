@@ -1,20 +1,20 @@
 # -*- coding: utf-8 -*-
-# Copyright 2007-2021 The HyperSpy developers
+# Copyright 2007-2022 The HyperSpy developers
 #
-# This file is part of  HyperSpy.
+# This file is part of HyperSpy.
 #
-#  HyperSpy is free software: you can redistribute it and/or modify
+# HyperSpy is free software: you can redistribute it and/or modify
 # it under the terms of the GNU General Public License as published by
 # the Free Software Foundation, either version 3 of the License, or
 # (at your option) any later version.
 #
-#  HyperSpy is distributed in the hope that it will be useful,
+# HyperSpy is distributed in the hope that it will be useful,
 # but WITHOUT ANY WARRANTY; without even the implied warranty of
-# MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+# MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
 # GNU General Public License for more details.
 #
 # You should have received a copy of the GNU General Public License
-# along with  HyperSpy.  If not, see <http://www.gnu.org/licenses/>.
+# along with HyperSpy. If not, see <http://www.gnu.org/licenses/>.
 
 from collections.abc import MutableMapping
 import copy
@@ -30,22 +30,22 @@ import warnings
 import dask.array as da
 from matplotlib import pyplot as plt
 import numpy as np
-from pint import UnitRegistry, UndefinedUnitError
+from pint import UndefinedUnitError
 from scipy import integrate
 from scipy import signal as sp_signal
 import traits.api as t
 
+import hyperspy
 from hyperspy.axes import AxesManager
-from hyperspy import io
+from hyperspy.api_nogui import _ureg
 from hyperspy.drawing import mpl_hie, mpl_hse, mpl_he
 from hyperspy.learn.mva import MVA, LearningResults
+from hyperspy.io import assign_signal_subclass
 import hyperspy.misc.utils
 from hyperspy.misc.utils import DictionaryTreeBrowser
 from hyperspy.drawing import signal as sigdraw
-from hyperspy.defaults_parser import preferences
 from hyperspy.misc.io.tools import ensure_directory
 from hyperspy.misc.utils import iterable_not_string
-from hyperspy.external.progressbar import progressbar
 from hyperspy.exceptions import SignalDimensionError, DataDimensionError
 from hyperspy.misc import rgb_tools
 from hyperspy.misc.utils import underline, isiterable
@@ -2938,7 +2938,7 @@ class BaseSignal(FancySlicing,
             filename = Path(filename)
             if extension is not None:
                 filename = filename.with_suffix(f".{extension}")
-        io.save(filename, self, overwrite=overwrite, **kwds)
+        hyperspy.io.save(filename, self, overwrite=overwrite, **kwds)
 
     def _replot(self):
         if self._plot is not None:
@@ -4274,12 +4274,11 @@ class BaseSignal(FancySlicing,
         if hasattr(self.metadata.Signal, 'quantity'):
             self.metadata.Signal.__delattr__('quantity')
 
-        ureg = UnitRegistry()
         for axis in im_fft.axes_manager.signal_axes:
             axis.scale = 1. / axis.size / axis.scale
             axis.offset = 0.0
             try:
-                units = ureg.parse_expression(str(axis.units))**(-1)
+                units = _ureg.parse_expression(str(axis.units))**(-1)
                 axis.units = '{:~}'.format(units.units)
             except UndefinedUnitError:
                 _logger.warning('Units are not set or cannot be recognized')
@@ -4359,11 +4358,10 @@ class BaseSignal(FancySlicing,
         if return_real:
             im_ifft = im_ifft.real
 
-        ureg = UnitRegistry()
         for axis in im_ifft.axes_manager.signal_axes:
             axis.scale = 1. / axis.size / axis.scale
             try:
-                units = ureg.parse_expression(str(axis.units)) ** (-1)
+                units = _ureg.parse_expression(str(axis.units)) ** (-1)
                 axis.units = '{:~}'.format(units.units)
             except UndefinedUnitError:
                 _logger.warning('Units are not set or cannot be recognized')
@@ -5014,7 +5012,7 @@ class BaseSignal(FancySlicing,
 
     def _get_iterating_kwargs(self, iterating_kwargs):
         signal_dim_shape = self.axes_manager.signal_shape
-        nav_chunks = self._get_navigation_chunk_size()
+        nav_chunks = self.get_chunk_size(self.axes_manager.navigation_axes)
         args, arg_keys = (), ()
         for key in iterating_kwargs:
             if not isinstance(iterating_kwargs[key], BaseSignal):
@@ -5025,11 +5023,18 @@ class BaseSignal(FancySlicing,
                     "Pass signal instances instead."
                 )
             if iterating_kwargs[key]._lazy:
-                if iterating_kwargs[key]._get_navigation_chunk_size() != nav_chunks:
-                    iterating_kwargs[key].rechunk(nav_chunks=nav_chunks, sig_chunks=-1)
+                axes = iterating_kwargs[key].axes_manager.navigation_axes
+                if iterating_kwargs[key].get_chunk_size(axes) != nav_chunks:
+                    iterating_kwargs[key].rechunk(
+                        nav_chunks=nav_chunks,
+                        sig_chunks=-1
+                        )
             else:
                 iterating_kwargs[key] = iterating_kwargs[key].as_lazy()
-                iterating_kwargs[key].rechunk(nav_chunks=nav_chunks, sig_chunks=-1)
+                iterating_kwargs[key].rechunk(
+                    nav_chunks=nav_chunks,
+                    sig_chunks=-1
+                    )
             extra_dims = (len(signal_dim_shape) -
                           len(iterating_kwargs[key].axes_manager.signal_shape))
             if extra_dims > 0:
@@ -5620,7 +5625,7 @@ class BaseSignal(FancySlicing,
 
     def _assign_subclass(self):
         mp = self.metadata
-        self.__class__ = hyperspy.io.assign_signal_subclass(
+        self.__class__ = assign_signal_subclass(
             dtype=self.data.dtype,
             signal_dimension=self.axes_manager.signal_dimension,
             signal_type=mp.Signal.signal_type

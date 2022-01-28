@@ -1,20 +1,20 @@
 # -*- coding: utf-8 -*-
-# Copyright 2007-2021 The HyperSpy developers
+# Copyright 2007-2022 The HyperSpy developers
 #
-# This file is part of  HyperSpy.
+# This file is part of HyperSpy.
 #
-#  HyperSpy is free software: you can redistribute it and/or modify
+# HyperSpy is free software: you can redistribute it and/or modify
 # it under the terms of the GNU General Public License as published by
 # the Free Software Foundation, either version 3 of the License, or
 # (at your option) any later version.
 #
-#  HyperSpy is distributed in the hope that it will be useful,
+# HyperSpy is distributed in the hope that it will be useful,
 # but WITHOUT ANY WARRANTY; without even the implied warranty of
-# MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+# MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
 # GNU General Public License for more details.
 #
 # You should have received a copy of the GNU General Public License
-# along with  HyperSpy.  If not, see <http://www.gnu.org/licenses/>.
+# along with HyperSpy. If not, see <http://www.gnu.org/licenses/>.
 
 import dask.array as da
 import numpy as np
@@ -389,3 +389,39 @@ class TestLazyPlot:
         assert s._cache_dask_chunk.shape == (5, 5, 20)
         assert s._cache_dask_chunk_slice == np.s_[0:5, 0:5]
         s._plot.close()
+
+
+class TestHTMLRep:
+
+    def test_html_rep(self, signal):
+        signal._repr_html_()
+
+    def test_html_rep_zero_dim_nav(self):
+        s = hs.signals.BaseSignal(da.random.random((500, 1000))).as_lazy()
+        s._repr_html_()
+
+    def test_html_rep_zero_dim_sig(self):
+        s = hs.signals.BaseSignal(da.random.random((500, 1000))).as_lazy().T
+        s._repr_html_()
+
+    def test_get_chunk_string(self):
+        s = hs.signals.BaseSignal(da.random.random((6, 6, 6, 6))).as_lazy()
+        s = s.transpose(2)
+        s.data = s.data.rechunk((3, 2, 6, 6))
+        s_string = s._get_chunk_string()
+        assert (s_string == "(2,3|<b>6</b>,<b>6</b>)")
+        s.data = s.data.rechunk((6, 6, 2, 3))
+        s_string = s._get_chunk_string()
+        assert (s_string == "(<b>6</b>,<b>6</b>|3,2)")
+
+
+def test_get_chunk_size(signal):
+    sig = signal
+    chunk_size = sig.get_chunk_size()
+    assert chunk_size == ((2, 1, 3), (4, 5))
+    assert sig.get_chunk_size(sig.axes_manager.navigation_axes) == chunk_size
+    assert sig.get_chunk_size([0, 1]) == chunk_size
+
+    sig = _signal()
+    chunk_size = sig.get_chunk_size(axes=0)
+    chunk_size == ((2, 1, 3), )
