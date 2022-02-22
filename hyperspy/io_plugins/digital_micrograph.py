@@ -958,7 +958,7 @@ class ImageObject(object):
                 'DocumentObjectList']['TagGroup0']['AnnotationGroupList']
         zorder = len(annotations_dict) + 1
         sz = len(str(zorder))
-        fmt = "{:0"+str(sz)+"d}_{}_{:d}"  # zorder, name, UniqueID
+        fmt = "{}{:d}"  # name, UniqueID
         for annotation in annotations_dict.values():
             zorder -= 1
 #            uid = max_id - annotation['UniqueID']
@@ -994,7 +994,7 @@ class ImageObject(object):
                                 'verticalalignment': 'bottom',
                                 },
                             }
-                        marker_name = fmt.format(zorder, "Text", uid)
+                        marker_name = fmt.format("Text", uid)
                         markers_dict[marker_name] = label_marker_dict
 
                 if ('facecolor' in marker_properties or
@@ -1016,7 +1016,7 @@ class ImageObject(object):
                             }
                 temp_dict['marker_properties'] = marker_properties
 #                name = temp_dict['marker_type'] + str(annotation['UniqueID'])
-                name = fmt.format(zorder, temp_dict['marker_type'], uid)
+                name = fmt.format(temp_dict['marker_type'], uid)
                 markers_dict[name] = temp_dict
         return markers_dict
 

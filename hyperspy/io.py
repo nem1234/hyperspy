@@ -733,8 +733,8 @@ def dict2signal(signal_dict, lazy=False):
         markers_dict = markers_metadata_dict_to_markers(
             mp['Markers'],
             axes_manager=signal.axes_manager)
-        del signal.metadata.Markers
-        signal.metadata.Markers = {}
+        if "Markers" in signal.metadata:
+            del signal.metadata.Markers
         signal.metadata.Markers = markers_dict
     return signal
 
