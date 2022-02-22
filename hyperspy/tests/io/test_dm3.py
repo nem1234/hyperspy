@@ -385,6 +385,7 @@ def test_multi_signal():
                     'date': '2019-12-10',
                     'time': '15:32:41',
                     'authors': 'JohnDoe'},
+        'Markers': {},
         'Signal': {'signal_type': '',
                    'quantity': 'Intensity',
                    'Noise_properties': {
@@ -419,6 +420,7 @@ def test_multi_signal():
         'General': {
             'title': 'Plot',
             'original_filename': 'multi_signal.dm3'},
+        'Markers': {},
         'Signal': {
             'signal_type': '',
             'quantity': 'Intensity',
@@ -517,10 +519,11 @@ class TestAnnotationsToMarkers:
         s = load(fname)
         marker_name = s.metadata.Markers.keys()[0]
         marker = s.metadata.Markers[marker_name]
-        assert marker.get_data_position('x1') == 0.0
-        assert marker.get_data_position('y1') == 9.0
-        assert marker.get_data_position('x2') == 9.0
-        assert marker.get_data_position('y2') == 0.0
+        print(marker.marker_properties)
+        assert marker.get_data_position('x1') == -0.5
+        assert marker.get_data_position('y1') == 8.5
+        assert marker.get_data_position('x2') == 8.5
+        assert marker.get_data_position('y2') == -0.5
         # The white color in the filename refers to the face color of the
         # drawing this is currently not implemented in HyperSpy's markers
         assert marker.marker_properties['color'] == (1, 0, 0)
@@ -535,12 +538,13 @@ class TestAnnotationsToMarkers:
         marker = s.metadata.Markers[marker_name]
         # Note: the coordinates are shifted by 1 in both the x and y direction
         # compared to how the rectangle is visualized in DM.
-        assert marker.get_data_position('x1') == 7.0
-        assert marker.get_data_position('y1') == 7.0
-        assert marker.get_data_position('x2') == 9.0
-        assert marker.get_data_position('y2') == 9.0
+        assert marker.get_data_position('x1') == 6.5
+        assert marker.get_data_position('y1') == 6.5
+        assert marker.get_data_position('x2') == 8.5
+        assert marker.get_data_position('y2') == 8.5
         # The white color refers to the face color of the drawing
         # this is currently not implemented in HyperSpy's markers
+        print(marker.marker_properties)
         assert marker.marker_properties['color'] == (1, 0, 0)
         assert marker.marker_properties['linestyle'] == '--'
 
@@ -568,6 +572,7 @@ class TestAnnotationsToMarkers:
 
     def test_line_with_text(self, tmpdir):
         s = load(os.path.join(tmpdir, "line_with_text_white.dm3"))
+        print(s.metadata.Markers)
         marker_line = s.metadata.Markers.LineSegment16
         marker_text = s.metadata.Markers.Text17
         assert marker_line.marker_properties['color'] == (1, 1, 1)
@@ -576,14 +581,16 @@ class TestAnnotationsToMarkers:
     def test_point_marker(self, tmpdir):
         s = load(os.path.join(tmpdir, "point_marker_top_left_red_0_0.dm3"))
         marker = s.metadata.Markers[s.metadata.Markers.keys()[0]]
-        assert marker.get_data_position('x1') == 0.0
-        assert marker.get_data_position('y1') == 0.0
+        assert marker.get_data_position('x1') == -0.5
+        assert marker.get_data_position('y1') == -0.5
+        print(marker.marker_properties)
         assert marker.marker_properties['color'] == (1, 0, 0)
 
     def test_rectangle_marker_white(self, tmpdir):
         s = load(os.path.join(tmpdir, "rectangle_marker_white_top_left.dm3"))
         marker = s.metadata.Markers[s.metadata.Markers.keys()[0]]
-        assert marker.marker_properties['color'] == (1, 1, 1)
+        print(marker.marker_properties)
+        assert marker.marker_properties['edgecolor'] == (1, 1, 1)
 
     def test_text_marker(self, tmpdir):
         s = load(os.path.join(tmpdir, "text_marker_white_top_right.dm3"))
@@ -599,22 +606,24 @@ class TestAnnotationsToMarkers:
         scale = s.axes_manager[0].scale
         marker_beam = s.metadata.Markers.Point11
         marker_beam_text = s.metadata.Markers.Text11
-        assert marker_beam.get_data_position('x1')/scale == 15.
-        assert marker_beam.get_data_position('y1')/scale == 1.
+        def _scale(x):
+            return (x+0.5)/scale
+        assert _scale(marker_beam.get_data_position('x1')) == 15.
+        assert _scale(marker_beam.get_data_position('y1')) == 1.
         assert marker_beam_text.get_data_position('text') == 'Beam'
 
         marker_line = s.metadata.Markers.LineSegment14
         marker_line_text = s.metadata.Markers.Text14
-        assert marker_line.get_data_position('x1')/scale == 0.
-        assert marker_line.get_data_position('y1')/scale == 3.
-        assert marker_line.get_data_position('x2')/scale == 2.
-        assert marker_line.get_data_position('y2')/scale == 6.
+        assert _scale(marker_line.get_data_position('x1')) == 0.
+        assert _scale(marker_line.get_data_position('y1')) == 3.
+        assert _scale(marker_line.get_data_position('x2')) == 2.
+        assert _scale(marker_line.get_data_position('y2')) == 6.
         assert marker_line_text.get_data_position('text') == 'Spectrum Image'
 
         marker_rect = s.metadata.Markers.Rectangle15
         marker_rect_text = s.metadata.Markers.Text15
-        assert marker_rect.get_data_position('x1')/scale == 4.
-        assert marker_rect.get_data_position('y1')/scale == 0.
-        assert marker_rect.get_data_position('x2')/scale == 14.
-        assert marker_rect.get_data_position('y2')/scale == 10.
+        assert _scale(marker_rect.get_data_position('x1')) == 4.
+        assert _scale(marker_rect.get_data_position('y1')) == 0.
+        assert _scale(marker_rect.get_data_position('x2')) == 14.
+        assert _scale(marker_rect.get_data_position('y2')) == 10.
         assert marker_rect_text.get_data_position('text') == 'Spatial Drift'
