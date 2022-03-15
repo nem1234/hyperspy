@@ -816,14 +816,17 @@ class ImageObject(object):
             _logger.warning(f"Date string '{date}' could not be parsed.")
 
     def _get_microscope_name(self, ImageTags):
-        try:
-            if ImageTags.Session_Info.Microscope != "[]":
-                return ImageTags.Session_Info.Microscope
-        except AttributeError:
-            if 'Name' in ImageTags['Microscope_Info'].keys():
-                return ImageTags.Microscope_Info.Name
-            elif 'Microscope' in ImageTags['Microscope_Info'].keys():
-                return ImageTags.Microscope_Info.Microscope
+        locations = (
+            "Session_Info.Microscope",
+            "Microscope_Info.Name",
+            "Microscope_Info.Microscope",
+        )
+        for loc in locations:
+            mic = ImageTags.get_item(loc)
+            if mic and mic != "[]":
+                return mic
+        _logger.info("Microscope name not present")
+        return None
 
     def _rgb_color(self, color_raw):
         color = []
@@ -1020,7 +1023,7 @@ class ImageObject(object):
                 markers_dict[name] = temp_dict
         return markers_dict
 
-    def _parse_string(self, tag):
+    def _parse_string(self, tag, convert_to_float=False, tag_name=None):
         if len(tag) == 0:
             return None
         elif convert_to_float:

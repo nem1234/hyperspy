@@ -102,3 +102,4 @@ class Ellipse(MarkerBase):
         height = self.get_data_position('y2')
         self.marker = self.ax.add_patch(patches.Ellipse(
             [x1,y1], width, height, **self.marker_properties))
+

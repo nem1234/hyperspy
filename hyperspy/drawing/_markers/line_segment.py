@@ -63,21 +63,20 @@ class LineSegment(MarkerBase):
 
     def __init__(self, x1, y1, x2, y2, **kwargs):
         MarkerBase.__init__(self)
-        lp = {'color': 'black', 'linewidth': 1, 'zorder': None}
+        lp = {'color': 'black', 'linewidth': 1}
         self.marker_properties = lp
         self.set_data(x1=x1, y1=y1, x2=x2, y2=y2)
         self.set_marker_properties(**kwargs)
         self.name = 'line_segment'
 
     def __repr__(self):
-        string = "<marker.{}, {} (x1={},x2={},y1={},y2={},linewidth={},color={})>".format(
+        string = "<marker.{}, {} (x1={},x2={},y1={},y2={},color={})>".format(
             self.__class__.__name__,
             self.name,
             self.get_data_position('x1'),
             self.get_data_position('x2'),
             self.get_data_position('y1'),
             self.get_data_position('y2'),
-            self.marker_properties['linewidth'],
             self.marker_properties['color'],
         )
         return(string)
@@ -88,10 +87,16 @@ class LineSegment(MarkerBase):
         self._update_segment()
 
     def _plot_marker(self):
-        xy1, xy2, _, _ = self.get_xywh()
-        self.marker = self.ax.plot((xy1[0],xy2[0]), (xy1[1],xy2[1]),
+        x1 = self.get_data_position('x1')
+        x2 = self.get_data_position('x2')
+        y1 = self.get_data_position('y1')
+        y2 = self.get_data_position('y2')
+        self.marker = self.ax.plot((x1, x2), (y1, y2),
                                    **self.marker_properties)[0]
 
     def _update_segment(self):
-        xy1, xy2, _, _ = self.get_xywh()
-        self.marker.set_data((xy1[0],xy2[0]), (xy1[1],xy2[1]))
+        x1 = self.get_data_position('x1')
+        x2 = self.get_data_position('x2')
+        y1 = self.get_data_position('y1')
+        y2 = self.get_data_position('y2')
+        self.marker.set_data((x1, x2), (y1, y2))
