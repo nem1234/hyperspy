@@ -14,7 +14,7 @@
 # GNU General Public License for more details.
 #
 # You should have received a copy of the GNU General Public License
-# along with HyperSpy. If not, see <http://www.gnu.org/licenses/>.
+# along with HyperSpy. If not, see <https://www.gnu.org/licenses/#GPL>.
 
 import logging
 from pathlib import Path
@@ -403,7 +403,7 @@ def test_rgba16():
     with pytest.warns(VisibleDeprecationWarning):
         print(my_path)
         s = load(my_path / "hdf5_files" / "test_rgba16.hdf5")
-    data = np.load(my_path / "npy_files" / "test_rgba16.npy")
+    data = np.load(my_path / "npz_files" / "test_rgba16.npz")['a']
     assert (s.data == data).all()
 
 
@@ -812,6 +812,22 @@ def test_save_ragged_array(tmp_path, file):
     for i in range(len(s.data)):
         np.testing.assert_allclose(s.data[i], s1.data[i])
     assert s.__class__ == s1.__class__
+
+
+@zspy_marker
+def test_save_ragged_dim2(tmp_path, file):
+    x = np.empty(5, dtype=object)
+    for i in range(1, 6):
+        x[i - 1] = np.array([list(range(i)), list(range(i))])
+
+    s = BaseSignal(x, ragged=True)
+
+    filename = tmp_path / file
+    s.save(filename)
+    s2 = load(filename)
+
+    for i, j in zip(s.data,s2.data):
+        np.testing.assert_array_equal(i,j)
 
 
 def test_load_missing_extension(caplog):

@@ -14,7 +14,7 @@
 # GNU General Public License for more details.
 #
 # You should have received a copy of the GNU General Public License
-# along with HyperSpy. If not, see <http://www.gnu.org/licenses/>.
+# along with HyperSpy. If not, see <https://www.gnu.org/licenses/#GPL>.
 
 import numpy as np
 import dask.array as da
@@ -44,9 +44,9 @@ def _estimate_lorentzian_parameters(signal, x1, x2, only_current):
     cdf = np.cumsum(data,i)
     cdfnorm = cdf/np.max(cdf, i).reshape(centre_shape)
 
-    icentre = np.argmin(np.abs(0.5 - cdfnorm), i)
-    igamma1 = np.argmin(np.abs(0.75 - cdfnorm), i)
-    igamma2 = np.argmin(np.abs(0.25 - cdfnorm), i)
+    icentre = np.argmin(abs(0.5 - cdfnorm), i)
+    igamma1 = np.argmin(abs(0.75 - cdfnorm), i)
+    igamma2 = np.argmin(abs(0.25 - cdfnorm), i)
 
     if isinstance(data, da.Array):
         icentre, igamma1, igamma2 = da.compute(icentre, igamma1, igamma2)
@@ -79,7 +79,7 @@ class Lorentzian(Expression):
     Parameters
     -----------
     A : float
-        Height parameter, where :math:`A/(\gamma\pi)` is the maximum of the
+        Area parameter, where :math:`A/(\gamma\pi)` is the maximum (height) of
         peak.
     gamma : float
         Scale parameter corresponding to the half-width-at-half-maximum of the

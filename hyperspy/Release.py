@@ -14,7 +14,7 @@
 # GNU General Public License for more details.
 #
 # You should have received a copy of the GNU General Public License
-# along with HyperSpy. If not, see <http://www.gnu.org/licenses/>.
+# along with HyperSpy. If not, see <https://www.gnu.org/licenses/#GPL>.
 
 name = 'hyperspy'
 
@@ -25,7 +25,7 @@ name = 'hyperspy'
 # When running setup.py the ".dev" string will be replaced (if possible)
 # by the output of "git describe" if git is available or the git
 # hash if .git is present.
-version = "1.7.0.dev0"
+version = "1.8.0.dev0"
 __version__ = version
 description = "Multidimensional data analysis toolbox"
 license = 'GPL v3'

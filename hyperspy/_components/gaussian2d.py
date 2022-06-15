@@ -14,7 +14,7 @@
 # GNU General Public License for more details.
 #
 # You should have received a copy of the GNU General Public License
-# along with HyperSpy. If not, see <http://www.gnu.org/licenses/>.
+# along with HyperSpy. If not, see <https://www.gnu.org/licenses/#GPL>.
 
 import math
 import numpy as np
@@ -45,7 +45,8 @@ class Gaussian2D(Expression):
     Parameters
     ----------
     A : float
-        Amplitude (height of the peak scaled by :math:`2 \pi s_x s_y`).
+        Volume (height of the peak scaled by :math:`2 \pi s_x s_y`) --
+        eqivalent to the area in a 1D Gaussian.
     sigma_x : float
         Width (scale parameter) of the Gaussian distribution in `x` direction.
     sigma_y : float
