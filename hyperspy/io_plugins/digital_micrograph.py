@@ -245,6 +245,7 @@ class DigitalMicrographReader(object):
             18: (self.read_string, None, 'c'),  # 0x12
             20: (self.read_array, None, 'array'),  # 0x14
         }
+#        _logger.info(f"type={enc_dtype}")
         return dtype_dict[enc_dtype]
 
     def skipif4(self, n=1):
@@ -376,6 +377,7 @@ class DigitalMicrographReader(object):
         if skip is True:
             if enc_eltype not in self._complex_type:
                 size_bytes = self.get_data_reader(enc_eltype)[1] * size
+#                _logger.debug(f"size_bytes = {size_bytes}")
                 data = {"size": size,
                         "endian": self.endian,
                         "size_bytes": size_bytes,
