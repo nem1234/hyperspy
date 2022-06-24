@@ -787,6 +787,15 @@ class ImageObject(object):
         _logger.info("Microscope name not present")
         return None
 
+    def _rgb_color(self, color_raw):
+        color = []
+        for raw_value in color_raw:
+            if raw_value<0:  # convert signed 16 bit to unsigned
+                raw_value += 2**16
+            raw_value /= (2**16-1)
+            color.append(raw_value)
+        return tuple(color)
+
     def _get_marker_color(self, annotation):
         if ('ForegroundColor' in annotation) or ('Color' in annotation):
             # There seems to be 3 different colors in annotations in
@@ -800,18 +809,19 @@ class ImageObject(object):
                 color_raw = annotation['Color']
             else:
                 color_raw = annotation['ForegroundColor']
-            # Colors in DM are saved as negative values
-            # Some values are also in 16-bit
-            color = []
-            for raw_value in color_raw:
-                raw_value = abs(raw_value)
-                if raw_value > 1:
-                    raw_value /= 2**16
-                color.append(raw_value)
-            color = tuple(color)
+            color = self._rgb_color(color_raw)
         else:
             color = 'red'
         return(color)
+
+    def _set_color(self, annotation, marker_properties):
+        if annotation['FillMode']==1:
+            marker_properties['fill'] = True
+            marker_properties['facecolor'] = self._rgb_color(annotation['ForegroundColor'])
+            marker_properties['edgecolor'] = self._rgb_color(annotation['BackgroundColor'])
+        else:
+            marker_properties['fill'] = False
+            marker_properties['edgecolor'] = self._rgb_color(annotation['ForegroundColor'])
 
     def _get_marker_props(self, annotation):
         marker_properties = {}
@@ -823,14 +833,23 @@ class ImageObject(object):
                 temp_dict['marker_type'] = "LineSegment"
                 marker_properties['linewidth'] = 2
             elif annotation_type == 3:
-                _logger.info('Arrow marker not loaded: not implemented')
+                temp_dict['marker_type'] = "Arrow"
+                marker_properties['arrowstyle'] = '<-'
+                marker_properties['linewidth'] = 1
+                self._set_color(annotation, marker_properties)
             elif annotation_type == 4:
-                _logger.info('Double arrow marker not loaded: not implemented')
+                temp_dict['marker_type'] = "Arrow"
+                marker_properties['arrowstyle'] = '<->'
+                marker_properties['linewidth'] = 1
+                self._set_color(annotation, marker_properties)
             elif annotation_type == 5:
                 temp_dict['marker_type'] = "Rectangle"
-                marker_properties['linewidth'] = 2
+                marker_properties['linewidth'] = 1
+                self._set_color(annotation, marker_properties)
             elif annotation_type == 6:
-                _logger.info('Ellipse marker not loaded: not implemented')
+                temp_dict['marker_type'] = "Ellipse"
+                marker_properties['linewidth'] = 1
+                self._set_color(annotation, marker_properties)
             elif annotation_type == 8:
                 _logger.info('Mask spot marker not loaded: not implemented')
             elif annotation_type == 9:
@@ -838,6 +857,37 @@ class ImageObject(object):
             elif annotation_type == 13:
                 temp_dict['marker_type'] = "Text"
                 marker_text = annotation['Text']
+                marker_properties['color'] = self._rgb_color(annotation['ForegroundColor'])
+                marker_properties['verticalalignment'] = 'top'
+                if annotation['FillMode']==1:
+                    marker_properties['backgroundcolor'] = self._rgb_color(annotation['BackgroundColor'])
+                if 'TextFormat' in annotation:
+                    _format = annotation['TextFormat']
+                    ## FontFaceName is not compatible with matplotlib
+                    # if 'FontFaceName' in _format:
+                    #    marker_properties['fontfamily']=_format['FontFaceName']
+
+                    ## FontSize is different to the original dm4 file due to
+                    ##   the difference of the font face
+                    ## Font size scaling of 50 is a simple approximation
+                    ## Posion of text is moved due to the text padding
+                    if 'FontSize' in _format:
+                        marker_properties['fontsize']=_format['FontSize']*0.5
+
+                # Make padding smaller
+                # Padding size in matplotlib depends on the size of "text" BB.
+                # It is difficult to estimate the size of padding before plotting
+                #
+                #            matplotlib            (x,y)    DM4
+                #   +---------------------------+  +-------------------------+
+                #   |         Pad               |  |         Pad             |
+                #   | (x,y)+---------------+    |  |    +---------------+    |
+                #   |      |  Text         |    |  |    | Text          |    |
+                #   |      +---------------+    |  |    +---------------+    |
+                #   |                           |  |                         |
+                #   +---------------------------+  +-------------------------+
+                #
+#                marker_properties['pad'] = 0.1
             elif annotation_type == 15:
                 _logger.info(
                         'Mask band pass marker not loaded: not implemented')
@@ -847,11 +897,13 @@ class ImageObject(object):
             elif annotation_type == 23:  # roirectangle
                 temp_dict['marker_type'] = "Rectangle"
                 marker_properties['linestyle'] = '--'
-                marker_properties['linewidth'] = 2
+                marker_properties['linewidth'] = 1
+                self._set_color(annotation, marker_properties)
             elif annotation_type == 25:  # roiline
                 temp_dict['marker_type'] = "LineSegment"
                 marker_properties['linestyle'] = '--'
-                marker_properties['linewidth'] = 2
+                marker_properties['linewidth'] = 1
+                self._set_color(annotation, marker_properties)
             elif annotation_type == 27:
                 temp_dict['marker_type'] = "Point"
             elif annotation_type == 29:
@@ -865,16 +917,28 @@ class ImageObject(object):
         axes = self.get_axes_dict()
         scale_y, scale_x = self.scales[-2], self.scales[-1]
         offset_y, offset_x = self.offsets[-2], self.offsets[-1]
-
         markers_dict = {}
         annotations_dict = tags_dict[
                 'DocumentObjectList']['TagGroup0']['AnnotationGroupList']
+        zorder = len(annotations_dict) + 1
+        sz = len(str(zorder))
+        fmt = "{:0"+str(sz)+"d}_{}_{:d}"  # zorder, name, UniqueID
         for annotation in annotations_dict.values():
+            zorder -= 1
+#            uid = max_id - annotation['UniqueID']
+            uid = annotation['UniqueID']
             if 'Rectangle' in annotation:
                 position = annotation['Rectangle']
             marker_properties, temp_dict, marker_text = self._get_marker_props(
                     annotation)
+            marker_properties['zorder'] = zorder
             if 'marker_type' in temp_dict:
+                if temp_dict['marker_type'] == 'Ellipse':
+                    # (position[0],[1]) should be center
+                    width = (position[2] - position[0])
+                    height = (position[3] - position[1])
+                    position = (position[0] + width/2, position[1] + height/2,
+                                width, height)
                 color = self._get_marker_color(annotation)
                 if 'Label' in annotation:
                     # Some annotations contains an empty label, which are
@@ -891,14 +955,19 @@ class ImageObject(object):
                                 'text': marker_label,
                                 },
                             'marker_properties': {
-                                'color': color,
-                                'va': 'bottom',
-                                }
+                                'verticalalignment': 'bottom',
+                                },
                             }
-                        marker_name = "Text" + str(annotation['UniqueID'])
+                        marker_name = fmt.format(zorder, "Text", uid)
                         markers_dict[marker_name] = label_marker_dict
+                if ('facecolor' in marker_properties or
+                    'edgecolor' in marker_properties):
+                    if 'color' in marker_properties:
+                        del marker_properties['color']
+                        marker_properties['edgecolor'] = color
+                else:
+                    marker_properties['color'] = color
 
-                marker_properties['color'] = color
                 temp_dict['plot_on_signal'] = True,
                 temp_dict['data'] = {
                             'y1': position[0]*scale_y+offset_y,
@@ -909,7 +978,8 @@ class ImageObject(object):
                             'text': marker_text,
                             }
                 temp_dict['marker_properties'] = marker_properties
-                name = temp_dict['marker_type'] + str(annotation['UniqueID'])
+#                name = temp_dict['marker_type'] + str(annotation['UniqueID'])
+                name = fmt.format(zorder, temp_dict['marker_type'], uid)
                 markers_dict[name] = temp_dict
         return markers_dict
 
@@ -1237,11 +1307,12 @@ def file_reader(filename, record_by=None, order=None, lazy=False,
             # this any Exceptions are caught and logged instead of the files
             # not being loaded at all.
             try:
-                markers_dict = image.get_markers_dict(dm.tags_dict)
+               markers_dict = image.get_markers_dict(dm.tags_dict)
             except Exception as err:
                 _logger.warning(
                         "Markers could not be loaded from the file"
                         "due to: {0}".format(err))
+#                print("\n\nMarkers could not be loaded from the file due to: {0}".format(err))
                 markers_dict = {}
             if markers_dict:
                 mp['Markers'] = markers_dict
