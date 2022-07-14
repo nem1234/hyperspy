@@ -1312,10 +1312,8 @@ def file_reader(filename, record_by=None, order=None, lazy=False,
                 _logger.warning(
                         "Markers could not be loaded from the file"
                         "due to: {0}".format(err))
-#                print("\n\nMarkers could not be loaded from the file due to: {0}".format(err))
                 markers_dict = {}
-            if markers_dict:
-                mp['Markers'] = markers_dict
+            mp['Markers'] = markers_dict
 
             post_process = []
             if image.to_spectrum is True:
