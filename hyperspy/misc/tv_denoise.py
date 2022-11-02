@@ -149,7 +149,7 @@ def _tv_denoise_2d(im, weight=50, eps=2.e-4, keep_type=False, n_iter_max=200):
     Notes
     -----
     The principle of total variation denoising is explained in
-    http://en.wikipedia.org/wiki/Total_variation_denoising
+    https://en.wikipedia.org/wiki/Total_variation_denoising
 
     This code is an implementation of the algorithm of Rudin, Fatemi and Osher
     that was proposed by Chambolle in [*]_.
@@ -163,10 +163,10 @@ def _tv_denoise_2d(im, weight=50, eps=2.e-4, keep_type=False, n_iter_max=200):
 
     Examples
     ---------
-    >>> import scipy
-    >>> ascent = scipy.ascent().astype(float)
-    >>> ascent += 0.5 * ascent.std()*np.random.randn(*ascent.shape)
-    >>> denoised_ascent = tv_denoise(ascent, weight=60.0)
+    >>> import skimage
+    >>> camera = skimage.data.camera().astype(float)
+    >>> camera += 0.5 * camera.std()*np.random.randn(*ascent.shape)
+    >>> denoised_camera = tv_denoise(camera, weight=60.0)
     """
     im_type = im.dtype
     if im_type is not float:
@@ -244,7 +244,7 @@ def _tv_denoise_1d(im, weight=50, eps=2.e-4, keep_type=False, n_iter_max=200):
     Notes
     -----
     The principle of total variation denoising is explained in
-    http://en.wikipedia.org/wiki/Total_variation_denoising
+    https://en.wikipedia.org/wiki/Total_variation_denoising
 
     This code is an implementation of the algorithm of Rudin, Fatemi and Osher
     that was proposed by Chambolle in [*]_.
@@ -258,10 +258,10 @@ def _tv_denoise_1d(im, weight=50, eps=2.e-4, keep_type=False, n_iter_max=200):
 
     Examples
     ---------
-    >>> import scipy
-    >>> ascent = scipy.misc.ascent().astype(float)
-    >>> ascent += 0.5 * ascent.std()*np.random.randn(*ascent.shape)
-    >>> denoised_ascent = tv_denoise(ascent, weight=60.0)
+    >>> import skimage
+    >>> camera = skimage.data.camera().astype(float)
+    >>> camera += 0.5 * camera.std()*np.random.randn(*camera.shape)
+    >>> denoised_camera = tv_denoise(camera, weight=60.0)
     """
     im_type = im.dtype
     if im_type is not float:
@@ -335,7 +335,7 @@ def tv_denoise(im, weight=50, eps=2.e-4, keep_type=False, n_iter_max=200):
     Notes
     -----
     The principle of total variation denoising is explained in
-    http://en.wikipedia.org/wiki/Total_variation_denoising
+    https://en.wikipedia.org/wiki/Total_variation_denoising
 
     The principle of total variation denoising is to minimize the
     total variation of the image, which can be roughly described as
@@ -356,10 +356,10 @@ def tv_denoise(im, weight=50, eps=2.e-4, keep_type=False, n_iter_max=200):
     Examples
     ---------
     >>> # 2D example using ascent
-    >>> import scipy
-    >>> ascent = scipy.misc.ascent().astype(float)
-    >>> ascent += 0.5 * ascent.std()*np.random.randn(*ascent.shape)
-    >>> denoised_ascent = tv_denoise(ascent, weight=60)
+    >>> import skimage
+    >>> camera = skimage.data.camera().astype(float)
+    >>> camera += 0.5 * camera.std()*np.random.randn(*camera.shape)
+    >>> denoised_camera = tv_denoise(camera, weight=60)
     >>> # 3D example on synthetic data
     >>> x, y, z = np.ogrid[0:40, 0:40, 0:40]
     >>> mask = (x -22)**2 + (y - 20)**2 + (z - 17)**2 < 8**2

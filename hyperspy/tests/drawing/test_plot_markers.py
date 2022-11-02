@@ -519,6 +519,16 @@ def test_plot_eds_lines():
     return s._plot.signal_plot.figure
 
 
+@pytest.mark.parametrize("norm", [None, "log", "auto", "linear"])
+def test_plot_eds_lines_norm(norm):
+    a = EDS_TEM_Spectrum()
+    s = stack([a, a * 5])
+    # When norm is None, don't specify (use default)
+    # otherwise use specify value
+    kwargs = {"norm":norm} if norm else {}
+    s.plot(True, **kwargs)
+
+
 @pytest.mark.mpl_image_compare(
     baseline_dir=baseline_dir, tolerance=default_tol, style=style_pytest_mpl,
     filename='test_plot_eds_lines.png')
@@ -560,8 +570,13 @@ def test_plot_add_background_windows():
 
 def test_iterate_markers():
     from skimage.feature import peak_local_max
-    import scipy.misc
-    ims = BaseSignal(scipy.misc.face()).as_signal2D([1, 2])
+    try:
+        # scipy >=1.10
+        from scipy.datasets import face
+    except ImportError:
+        # scipy <1.10
+        from scipy.misc import face
+    ims = BaseSignal(face()).as_signal2D([1, 2])
     index = np.array([peak_local_max(im.data, min_distance=100,
                                      num_peaks=4) for im in ims])
     # Add multiple markers
